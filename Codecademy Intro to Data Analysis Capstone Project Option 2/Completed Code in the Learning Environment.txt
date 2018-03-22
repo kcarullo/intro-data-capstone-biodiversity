@@ -1,0 +1,166 @@
+Completed Code in the Learning Environment
+
+The code you're about to review is is broken into two parts. 1, the protection status of the species located in National Parks. 2, observations of sheep in the National Parks and Foot and Mouth Reduction Effort.  
+
+import codecademylib
+import pandas as pd
+from matplotlib import pyplot as plt
+
+# Loading the Data
+species = pd.read_csv('species_info.csv')
+
+print species.head(5)
+# Breaks down various types of categories of species and lists the following information. The species' scientific name, common name, and it's conservation status. 
+
+species_count = species.scientific_name.nunique()
+print species_count
+#How many different species are in the species DataFrame? 5541 differnet species. 
+species_type = species.category.unique()
+print species_type
+#What are the different values of category in the DataFrame species? Mammal, Bird, Reptile, Amphibian, Fish, Vascular Plant, Nonvascular Plant
+conservation_statuses = species.conservation_status.unique()
+# What are the different values of conservation_status? Endangered, In Recovery, Species of Concern, Threatened. 
+conservation_counts = species.groupby('conservation_status').scientific_name.nunique().reset_index()
+print conservation_counts
+#A break down of the number unique species by conservation status 
+species.fillna('No Intervention', inplace = True)
+
+conservation_counts_fixed = species.groupby('conservation_status').scientific_name.nunique().reset_index()
+print conservation_counts_fixed
+# The two codes directly above allows the missing unique species that were listed as NaN or blank to show up as No Intervention. We know from above there are 5541 total species the conservation_status only shows 180 unique species.
+
+Plotting Conservation Status by Species 
+
+import codecademylib
+import pandas as pd
+from matplotlib import pyplot as plt
+
+species = pd.read_csv('species_info.csv')
+
+species.fillna('No Intervention', inplace = True)
+
+protection_counts = species.groupby('conservation_status')\
+    .scientific_name.nunique().reset_index()\
+    .sort_values(by='scientific_name')
+    
+plt.figure(figsize=(10, 4))
+ax = plt.subplot()
+plt.bar(range(len(protection_counts)),protection_counts.scientific_name.values)
+ax.set_xticks(range(len(protection_counts)))
+ax.set_xticklabels(protection_counts.conservation_status.values)
+plt.ylabel('Number of Species')
+plt.title('Conservation Status by Species')
+labels = [e.get_text() for e in ax.get_xticklabels()]
+plt.show()  
+
+Investigating Endangered Species I and II
+
+import codecademylib
+import pandas as pd
+from matplotlib import pyplot as plt
+
+species = pd.read_csv('species_info.csv')
+
+species.fillna('No Intervention', inplace = True)
+
+species['is_protected'] = species.conservation_status != 'No Intervention'
+
+category_counts = species.groupby(['category', 'is_protected']).scientific_name.nunique().reset_index()
+print(category_counts.head())
+category_pivot = category_counts.pivot(columns='is_protected',
+                      index='category',
+                      values='scientific_name')\
+                      .reset_index()
+  
+category_pivot.columns = ['category', 'not_protected', 'protected']
+
+category_pivot['percent_protected'] = category_pivot.protected / (category_pivot.protected + category_pivot.not_protected)
+print category_pivot
+# The percent_protected column indicates the percentage of species that are protected in their specific category.
+
+Chi-Squared Test for Significance
+
+import codecademylib
+import pandas as pd
+from matplotlib import pyplot as plt
+from scipy.stats import chi2_contingency
+
+contingency = [[30, 146],
+              [75, 413]]
+
+pval = chi2_contingency(contingency)[1]
+print(pval)
+# No significant difference because pval > 0.05
+
+contingency_reptile_mammal = [[30, 146],
+                              [5, 73]]
+
+pval_reptile_mammal = chi2_contingency(contingency_reptile_mammal)[1]
+print(pval_reptile_mammal)
+# Significant difference! pval_reptile_mammal < 0.05
+
+Merging Sheep and Observation DataFrames 
+
+import codecademylib
+import pandas as pd
+from matplotlib import pyplot as plt
+
+species = pd.read_csv('species_info.csv')
+species.fillna('No Intervention', inplace = True)
+species['is_protected'] = species.conservation_status != 'No Intervention'
+
+observations = pd.read_csv('observations.csv')
+print(observations.head())
+species['is_sheep'] = species.common_names.apply(lambda x: 'Sheep' in x)
+
+species_is_sheep = species[species.is_sheep]
+print(species_is_sheep.head())
+
+sheep_species = species[(species.is_sheep) & (species.category == 'Mammal')]
+print(sheep_species.head())
+
+sheep_observations = pd.merge(sheep_species, observations)
+print(sheep_observations.head())
+
+obs_by_park = sheep_observations.groupby('park_name').observations.sum().reset_index()
+print(obs_by_park.head())
+# Total sheep sightings across by park. Bryce, 250. Great Smoky Mountains, 149. Yellowstone, 507. Yosemite, 282. 
+Plotting Sheep Sightings
+
+import codecademylib
+import pandas as pd
+from matplotlib import pyplot as plt
+
+species = pd.read_csv('species_info.csv')
+species['is_sheep'] = species.common_names.apply(lambda x: 'Sheep' in x)
+sheep_species = species[(species.is_sheep) & (species.category == 'Mammal')]
+
+observations = pd.read_csv('observations.csv')
+
+sheep_observations = observations.merge(sheep_species)
+
+obs_by_park = sheep_observations.groupby('park_name').observations.sum().reset_index()
+
+plt.figure(figsize=(16, 4))
+ax = plt.subplot()
+plt.bar(range(len(obs_by_park)),obs_by_park.observations.values)
+ax.set_xticks(range(len(obs_by_park)))
+ax.set_xticklabels(obs_by_park.park_name.values)
+plt.ylabel('Number of Observations')
+plt.title('Observations of Sheep per Week')
+plt.show()
+
+Foot and Mouth Reduction Effort - Sample Size Determination
+
+baseline = 15
+
+minimum_detectable_effect = 100*5./15
+print(minimum_detectable_effect)
+sample_size_per_variant = 510
+
+yellowstone_weeks_observing = sample_size_per_variant/507.
+print(yellowstone_weeks_observing)
+# 1 week at Yellostone National Park to observe enough sheep
+bryce_weeks_observing = sample_size_per_variant/250.
+print(bryce_weeks_observing)
+# 2 weeks at Bryce National Park to observe enough sheep
